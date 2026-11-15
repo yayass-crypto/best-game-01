@@ -65,7 +65,7 @@ export const COMBO = { window: 3.5, max: 5 };
 export const LEVEL = { points: 400, max: 8 };
 
 /** How many of each thing can exist at once; every pool is allocated once, at boot. */
-export const POOL = { items: 96, particles: 320, bubbles: 48, motes: 70 };
+export const POOL = { items: 96, particles: 320, bubbles: 48, motes: 70, texts: 24 };
 
 /** The reef's look, shallow to deep: the water darkens a level at a time. */
 export const WATER = [

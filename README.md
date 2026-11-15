@@ -15,6 +15,9 @@ the reef deepens a level — faster spawns, darker water — down to depth 8, Th
 - **P / Esc** — pause
 - **M** — mute the synthesized sounds
 
+Every point you win floats up from where you earned it ("+50", "DEPTH 3!"),
+and the combo meter under the score shows how hot your streak is.
+
 ## Play it
 
 ```sh

@@ -423,6 +423,24 @@ export function createRenderer(canvas) {
     context.fill();
   }
 
+  function drawTexts(state) {
+    context.textBaseline = 'middle';
+    for (const text of state.texts) {
+      if (!text.active) continue;
+      const ratio = Math.max(0, text.life / text.max);
+      const pop = 1 + (1 - ratio) * 0.12;
+      context.globalAlpha = Math.min(1, ratio * 1.6);
+      context.font = `bold ${Math.round(text.size * pop)}px ${FONT}`;
+      context.textAlign = 'center';
+      context.strokeStyle = 'rgba(2, 8, 16, 0.85)';
+      context.lineWidth = 4;
+      context.strokeText(text.value, text.x, text.y);
+      context.fillStyle = text.color;
+      context.fillText(text.value, text.x, text.y);
+    }
+    context.globalAlpha = 1;
+  }
+
   function drawWeeds(state) {
     context.save();
     context.globalAlpha = 0.9;
@@ -557,6 +575,7 @@ export function createRenderer(canvas) {
     }
     drawParticles(state);
     drawPlayer(state);
+    drawTexts(state);
     drawWeeds(state);
     drawVignette();
     if (state.flash > 0) {

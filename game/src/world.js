@@ -61,6 +61,11 @@ export function createWorld(random) {
   for (let index = 0; index < POOL.motes; index += 1) {
     motes.push({ x: 0, y: 0, r: 1, speed: 6, drift: 0, phase: 0 });
   }
+  // Floating score popups: the "+10" that rises and fades wherever points are won.
+  const texts = [];
+  for (let index = 0; index < POOL.texts; index += 1) {
+    texts.push({ active: false, x: 0, y: 0, life: 0, max: 1, value: '', color: '#fff', size: 22 });
+  }
   // The reef itself: corals, rocks and swaying weeds, laid out once per game from the seed.
   const reef = { corals: [], weeds: [], rocks: [] };
   for (let index = 0; index < 9; index += 1) {
@@ -79,6 +84,7 @@ export function createWorld(random) {
     particles,
     bubbles,
     motes,
+    texts,
     reef,
     score: 0,
     lives: LIVES,
@@ -107,6 +113,7 @@ export function createWorld(random) {
     for (const item of items) item.active = false;
     for (const particle of particles) particle.active = false;
     for (const bubble of bubbles) bubble.active = false;
+    for (const text of texts) text.active = false;
     for (const mote of motes) {
       mote.x = random() * FIELD.width;
       mote.y = random() * FIELD.height;
@@ -144,6 +151,23 @@ export function createWorld(random) {
   function freeBubble() {
     for (let index = 0; index < bubbles.length; index += 1) if (!bubbles[index].active) return bubbles[index];
     return null;
+  }
+
+  /** A floating score popup at (x, y): "+10", "+250", "DEPTH 3!" — it rises and fades. */
+  function spawnText(x, y, value, color, size) {
+    for (let index = 0; index < texts.length; index += 1) {
+      if (texts[index].active) continue;
+      const text = texts[index];
+      text.active = true;
+      text.x = x;
+      text.y = y;
+      text.max = 1.1;
+      text.life = text.max;
+      text.value = value;
+      text.color = color;
+      text.size = size;
+      return;
+    }
   }
 
   /** A little burst of glowing sparks at (x, y). */
@@ -249,6 +273,7 @@ export function createWorld(random) {
     const nextLevel = Math.min(LEVEL.max, 1 + Math.floor(state.score / LEVEL.points));
     if (nextLevel > state.level) {
       state.level = nextLevel;
+      spawnText(player.x, player.y - 52, `DEPTH ${nextLevel}!`, '#ffd75e', 30);
       events |= EVENT_LEVEL;
     }
 
@@ -348,6 +373,7 @@ export function createWorld(random) {
         state.comboTimer = COMBO.window;
         const gained = ORB.points * state.combo * (state.burst > 0 ? 2 : 1);
         state.score += gained;
+        spawnText(item.x, item.y - 18, `+${gained}`, '#5ff2d6', 22);
         burst(item.x, item.y, '#5ff2d6', 12, 130);
         events |= EVENT_EAT;
       } else if (item.kind === KIND_PEARL) {
@@ -355,6 +381,7 @@ export function createWorld(random) {
         state.combo = state.comboTimer > 0 ? Math.min(COMBO.max, state.combo + 1) : 1;
         state.comboTimer = COMBO.window;
         state.score += PEARL.points * state.combo;
+        spawnText(item.x, item.y - 20, `+${PEARL.points * state.combo}`, '#ffd75e', 30);
         state.burst = PEARL.burstSeconds;
         burst(item.x, item.y, '#ffd75e', 26, 220);
         burst(player.x, player.y, '#fff6c9', 18, 160);
@@ -363,6 +390,7 @@ export function createWorld(random) {
         // During a Lumen Burst the light scares hazards off — and pays for it.
         item.active = false;
         state.score += 25;
+        spawnText(item.x, item.y - 18, '+25', '#ffd75e', 22);
         burst(item.x, item.y, '#ffd75e', 16, 180);
         events |= EVENT_EAT;
       } else if (player.invuln === 0) {
@@ -382,7 +410,7 @@ export function createWorld(random) {
       }
     }
 
-    // Particles and bubbles drift and fade.
+    // Particles, bubbles and floating texts drift and fade.
     for (let index = 0; index < particles.length; index += 1) {
       const particle = particles[index];
       if (!particle.active) continue;
@@ -394,6 +422,16 @@ export function createWorld(random) {
       particle.x += particle.vx * dt;
       particle.y += particle.vy * dt;
       particle.vy -= 26 * dt;
+    }
+    for (let index = 0; index < texts.length; index += 1) {
+      const text = texts[index];
+      if (!text.active) continue;
+      text.life -= dt;
+      if (text.life <= 0) {
+        text.active = false;
+        continue;
+      }
+      text.y -= 36 * dt;
     }
     for (let index = 0; index < bubbles.length; index += 1) {
       const bubble = bubbles[index];
