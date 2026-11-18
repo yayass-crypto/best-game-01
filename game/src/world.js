@@ -8,12 +8,14 @@ import {
   ANGLER,
   COMBO,
   FIELD,
+  JELLY,
   LEVEL,
   LIVES,
   ORB,
   PEARL,
   PLAYER,
   POOL,
+  SHIELD,
   URCHIN,
 } from './config.js';
 
@@ -21,12 +23,16 @@ export const KIND_ORB = 0;
 export const KIND_PEARL = 1;
 export const KIND_URCHIN = 2;
 export const KIND_ANGLER = 3;
+export const KIND_JELLY = 4;
+export const KIND_SHIELD = 5;
 
 export const EVENT_EAT = 1;
 export const EVENT_PEARL = 2;
 export const EVENT_HIT = 4;
 export const EVENT_OVER = 8;
 export const EVENT_LEVEL = 16;
+export const EVENT_SHIELD = 32;
+export const EVENT_BLOCK = 64;
 
 function dist2(ax, ay, bx, by) {
   const dx = ax - bx;
@@ -44,6 +50,7 @@ export function createWorld(random) {
     invuln: 0,
     wag: 0,
     face: 1,
+    shield: false,
   };
   const items = [];
   for (let index = 0; index < POOL.items; index += 1) {
@@ -99,6 +106,8 @@ export function createWorld(random) {
     pearlTimer: PEARL.interval,
     urchinTimer: 1.2,
     anglerTimer: 5,
+    jellyTimer: 3.5,
+    shieldTimer: SHIELD.interval,
     bubbleTimer: 0,
   };
 
@@ -110,6 +119,7 @@ export function createWorld(random) {
     player.invuln = 0;
     player.wag = 0;
     player.face = 1;
+    player.shield = false;
     for (const item of items) item.active = false;
     for (const particle of particles) particle.active = false;
     for (const bubble of bubbles) bubble.active = false;
@@ -135,6 +145,8 @@ export function createWorld(random) {
     state.pearlTimer = PEARL.interval;
     state.urchinTimer = 1.2;
     state.anglerTimer = 5;
+    state.jellyTimer = 3.5;
+    state.shieldTimer = SHIELD.interval;
     state.bubbleTimer = 0;
   }
 
@@ -250,12 +262,46 @@ export function createWorld(random) {
     item.phase = random() * Math.PI * 2;
   }
 
+  function spawnJelly() {
+    const item = freeItem();
+    if (item === null) return;
+    item.active = true;
+    item.kind = KIND_JELLY;
+    item.r = JELLY.radius;
+    item.x = 40 + random() * (FIELD.width - 80);
+    item.baseX = item.x;
+    item.y = -item.r * 2;
+    item.vy = JELLY.fall + JELLY.fallPerLevel * (state.level - 1) + random() * 10;
+    item.vx = 0;
+    item.sway = JELLY.sway * (0.6 + random() * 0.8);
+    item.phase = random() * Math.PI * 2;
+  }
+
+  function spawnShield() {
+    const item = freeItem();
+    if (item === null) return;
+    item.active = true;
+    item.kind = KIND_SHIELD;
+    item.r = SHIELD.radius;
+    item.x = 60 + random() * (FIELD.width - 120);
+    item.baseX = item.x;
+    item.y = -item.r * 2;
+    item.vy = SHIELD.fall;
+    item.vx = 0;
+    item.sway = 22;
+    item.phase = random() * Math.PI * 2;
+  }
+
   function orbInterval() {
     return Math.max(ORB.minInterval, ORB.interval * ORB.intervalScale ** (state.level - 1));
   }
 
   function urchinInterval() {
     return Math.max(URCHIN.minInterval, URCHIN.interval * URCHIN.intervalScale ** (state.level - 1));
+  }
+
+  function jellyInterval() {
+    return Math.max(JELLY.minInterval, JELLY.interval * JELLY.intervalScale ** (state.level - 1));
   }
 
   function anglerInterval() {
@@ -323,12 +369,26 @@ export function createWorld(random) {
         spawnUrchin();
         state.urchinTimer += urchinInterval() + random() * 0.4;
       }
+      // Jellyfish drift through the title backdrop too, so the first screen
+      // already shows the reef's slow ambush.
+      state.jellyTimer -= dt;
+      if (state.jellyTimer <= 0) {
+        spawnJelly();
+        state.jellyTimer += jellyInterval() + random() * 2;
+      }
     }
     if (state.level >= 2 && !harmless) {
       state.anglerTimer -= dt;
       if (state.anglerTimer <= 0) {
         spawnAngler();
         state.anglerTimer += anglerInterval() + random() * 2;
+      }
+    }
+    if (!harmless) {
+      state.shieldTimer -= dt;
+      if (state.shieldTimer <= 0) {
+        spawnShield();
+        state.shieldTimer += SHIELD.interval + random() * 6;
       }
     }
 
@@ -386,6 +446,21 @@ export function createWorld(random) {
         burst(item.x, item.y, '#ffd75e', 26, 220);
         burst(player.x, player.y, '#fff6c9', 18, 160);
         events |= EVENT_PEARL;
+      } else if (item.kind === KIND_SHIELD) {
+        // A shield bubble: the first one arms Glowfin's shield, a spare one pays points.
+        item.active = false;
+        if (!player.shield) {
+          player.shield = true;
+          state.score += 25;
+          spawnText(item.x, item.y - 20, 'SHIELD!', '#6ee7ff', 26);
+          burst(item.x, item.y, '#6ee7ff', 18, 160);
+          events |= EVENT_SHIELD;
+        } else {
+          state.score += SHIELD.points;
+          spawnText(item.x, item.y - 20, `+${SHIELD.points}`, '#6ee7ff', 22);
+          burst(item.x, item.y, '#6ee7ff', 12, 130);
+          events |= EVENT_EAT;
+        }
       } else if (state.burst > 0) {
         // During a Lumen Burst the light scares hazards off — and pays for it.
         item.active = false;
@@ -395,17 +470,27 @@ export function createWorld(random) {
         events |= EVENT_EAT;
       } else if (player.invuln === 0) {
         item.active = false;
-        state.lives -= 1;
-        state.combo = 1;
-        state.comboTimer = 0;
-        player.invuln = PLAYER.invulnerable;
-        state.shake = 1;
-        state.flash = 1;
-        burst(player.x, player.y, '#ff6b81', 22, 200);
-        events |= EVENT_HIT;
-        if (state.lives === 0) {
-          events |= EVENT_OVER;
-          break;
+        if (player.shield) {
+          // The shield absorbs the hit outright: no life lost, combo kept.
+          player.shield = false;
+          player.invuln = 1;
+          state.shake = 0.5;
+          burst(player.x, player.y, '#6ee7ff', 20, 180);
+          spawnText(player.x, player.y - 40, 'SAVED!', '#6ee7ff', 24);
+          events |= EVENT_BLOCK;
+        } else {
+          state.lives -= 1;
+          state.combo = 1;
+          state.comboTimer = 0;
+          player.invuln = PLAYER.invulnerable;
+          state.shake = 1;
+          state.flash = 1;
+          burst(player.x, player.y, '#ff6b81', 22, 200);
+          events |= EVENT_HIT;
+          if (state.lives === 0) {
+            events |= EVENT_OVER;
+            break;
+          }
         }
       }
     }
@@ -470,6 +555,38 @@ export function createWorld(random) {
     item.phase = 0;
   }
 
+  /** Stage a jellyfish at (x, y), drifting in place (screenshot scenes). */
+  function forceJelly(x, y) {
+    const item = freeItem();
+    if (item === null) return;
+    item.active = true;
+    item.kind = KIND_JELLY;
+    item.r = JELLY.radius;
+    item.x = x;
+    item.y = y;
+    item.baseX = x;
+    item.vy = 0;
+    item.vx = 0;
+    item.sway = 0;
+    item.phase = 0.6;
+  }
+
+  /** Stage a shield bubble at (x, y), drifting in place (screenshot scenes). */
+  function forceShield(x, y) {
+    const item = freeItem();
+    if (item === null) return;
+    item.active = true;
+    item.kind = KIND_SHIELD;
+    item.r = SHIELD.radius;
+    item.x = x;
+    item.y = y;
+    item.baseX = x;
+    item.vy = 0;
+    item.vx = 0;
+    item.sway = 0;
+    item.phase = 0.3;
+  }
+
   reset();
-  return { state, reset, step, forcePearl, burst };
+  return { state, reset, step, forcePearl, forceJelly, forceShield, burst };
 }

@@ -6,10 +6,12 @@
 //
 // The game: Glowfin, a little lanternfish, swims a bioluminescent reef. Eat glowing
 // plankton orbs to build a combo (x1..x5), catch rare golden pearls for a Lumen Burst
-// (5 seconds invulnerable, double points), dodge spiky urchins and anglerfish. Three
-// lives; every 400 points the reef deepens a level — faster spawns, darker water —
-// up to depth 8, The Trench. Title, play, pause and game-over screens, a best score kept
-// in the browser, synthesized WebAudio sounds (M mutes), mouse or WASD/arrow steering.
+// (5 seconds invulnerable, double points), dodge spiky urchins, pulsing jellyfish and
+// anglerfish, and catch rare cyan shield bubbles — a shield absorbs the next hit
+// outright, no life lost. Three lives; every 400 points the reef deepens a level —
+// faster spawns, darker water — up to depth 8, The Trench. Title, play, pause and
+// game-over screens, a best score kept in the browser, synthesized WebAudio sounds
+// (M mutes), mouse or WASD/arrow steering.
 //
 // Serve it locally with `node serve.ts`, then open http://localhost:8080.
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:

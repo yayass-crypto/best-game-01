@@ -7,7 +7,7 @@
 // screenshot.
 import { BEST_KEY, STEP } from './config.js';
 import { createRandom } from './random.js';
-import { createWorld, EVENT_EAT, EVENT_HIT, EVENT_LEVEL, EVENT_OVER, EVENT_PEARL } from './world.js';
+import { createWorld, EVENT_BLOCK, EVENT_EAT, EVENT_HIT, EVENT_LEVEL, EVENT_OVER, EVENT_PEARL, EVENT_SHIELD } from './world.js';
 import { ACTION_CONFIRM, ACTION_MUTE, ACTION_PAUSE, createInput } from './input.js';
 import { createAudio } from './audio.js';
 import { createRenderer, SCREEN_OVER, SCREEN_PAUSED, SCREEN_PLAY, SCREEN_TITLE } from './render.js';
@@ -110,6 +110,14 @@ function runGame() {
     const events = world.step(STEP, steer.x, steer.y, false);
     if (events & EVENT_EAT) audio.eat(world.state.combo);
     if (events & EVENT_PEARL) audio.pearl();
+    if (events & EVENT_SHIELD) {
+      audio.shield();
+      announce('Shield up! It will save you from one hit.');
+    }
+    if (events & EVENT_BLOCK) {
+      audio.shield();
+      announce('The shield saved you!');
+    }
     if (events & EVENT_HIT) {
       audio.hit();
       announce(world.state.lives === 1 ? 'Ouch. 1 life left.' : `Ouch. ${world.state.lives} lives left.`);

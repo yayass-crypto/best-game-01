@@ -58,6 +58,34 @@ export const ANGLER = {
   wobble: 46,
 };
 
+/**
+ * Jellyfish drift down slowly, pulsing — bell swelling, tentacles trailing — and
+ * sting on touch. They are the reef's slow ambush: easy to see, easy to avoid,
+ * deadly if you drift into one while chasing orbs. From level 1 on.
+ */
+export const JELLY = {
+  radius: 20,
+  fall: 30,
+  fallPerLevel: 2,
+  sway: 34,
+  interval: 8,
+  intervalScale: 0.9,
+  minInterval: 4.5,
+};
+
+/**
+ * Shield bubbles: rare cyan bubbles that drift down. Catch one and Glowfin gains a
+ * shield — it absorbs the next hit outright (no life lost, no combo reset) and
+ * shows as a glowing ring around the fish. One shield at a time; a second bubble
+ * while shielded is worth +50 points instead.
+ */
+export const SHIELD = {
+  radius: 16,
+  fall: 40,
+  interval: 16,
+  points: 50,
+};
+
 /** Combo: each orb eaten within the window raises the multiplier; it decays when it lapses. */
 export const COMBO = { window: 3.5, max: 5 };
 
@@ -90,6 +118,11 @@ export const PALETTE = {
   angler: '#131a2e',
   anglerBelly: '#232f52',
   lure: '#7df9ff',
+  jelly: '#f0a6ff',
+  jellyCore: '#fbe7ff',
+  jellyTentacle: 'rgba(240, 166, 255, 0.75)',
+  shield: '#6ee7ff',
+  shieldCore: '#e6fbff',
   player: '#ffb347',
   playerBelly: '#ffe1a1',
   playerGlow: '#ffcf6e',

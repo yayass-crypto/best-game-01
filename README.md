@@ -5,8 +5,11 @@ no libraries, no network requests.
 
 You are **Glowfin**, a little lanternfish. Eat the glowing plankton orbs to build a
 combo (×1–×5), catch rare golden pearls for a **Lumen Burst** (5 seconds invulnerable,
-double points), and dodge spiky urchins and anglerfish. Three lives; every 400 points
-the reef deepens a level — faster spawns, darker water — down to depth 8, The Trench.
+double points), and dodge spiky urchins, pulsing **jellyfish** and anglerfish. Catch a
+rare cyan **shield bubble** and it arms a shield that absorbs the next hit outright —
+no life lost, combo kept — shown as a glowing ring around Glowfin and a SHIELD READY
+pill in the HUD. Three lives; every 400 points the reef deepens a level — faster
+spawns, darker water — down to depth 8, The Trench.
 
 ## Controls
 

@@ -63,6 +63,11 @@ export function createAudio() {
       note(784, 0.22, 'triangle', 0.16, 0.14);
       note(1047, 0.3, 'sine', 0.12, 0.21);
     },
+    shield() {
+      note(880, 0.14, 'sine', 0.14);
+      note(1175, 0.2, 'sine', 0.12, 0.06);
+      note(1568, 0.26, 'triangle', 0.1, 0.12);
+    },
     hit() {
       note(140, 0.28, 'sawtooth', 0.16);
       note(90, 0.32, 'sine', 0.2, 0.02);

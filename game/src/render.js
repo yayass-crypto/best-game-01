@@ -4,7 +4,7 @@
 // plankton, a lanternfish with a lit lure, and a golden Lumen Burst.
 
 import { COMBO, FIELD, FONT, LIVES, PALETTE, PEARL, WATER } from './config.js';
-import { KIND_ANGLER, KIND_ORB, KIND_PEARL, KIND_URCHIN } from './world.js';
+import { KIND_ANGLER, KIND_JELLY, KIND_ORB, KIND_PEARL, KIND_SHIELD, KIND_URCHIN } from './world.js';
 
 export const SCREEN_TITLE = 'title';
 export const SCREEN_PLAY = 'play';
@@ -107,7 +107,7 @@ export function createRenderer(canvas) {
       const topX = baseX + sway;
       const bottomX = baseX - sway * 0.4 + 90;
       const ray = context.createLinearGradient(topX, 0, bottomX, FIELD.height);
-      ray.addColorStop(0, 'rgba(140, 220, 255, 0.10)');
+      ray.addColorStop(0, 'rgba(140, 220, 255, 0.13)');
       ray.addColorStop(1, 'rgba(140, 220, 255, 0)');
       context.fillStyle = ray;
       context.beginPath();
@@ -230,6 +230,92 @@ export function createRenderer(canvas) {
     context.moveTo(item.x, item.y - s);
     context.lineTo(item.x, item.y + s);
     context.stroke();
+  }
+
+  function drawJelly(item, state) {
+    // The bell breathes: it swells and thins on a slow pulse, tentacles trailing.
+    const pulse = Math.sin(state.elapsed * 2.6 + item.phase);
+    const swell = 1 + 0.12 * pulse;
+    const r = item.r;
+    context.save();
+    context.globalCompositeOperation = 'lighter';
+    glowCircle(item.x, item.y, r * 2.6, 'rgba(240, 166, 255, 0.5)', 0.75);
+    context.restore();
+    // Tentacles: wavy lines hanging from the bell's rim, swaying with the pulse.
+    context.strokeStyle = PALETTE.jellyTentacle;
+    context.lineWidth = 2.5;
+    for (let tentacle = -2; tentacle <= 2; tentacle += 1) {
+      const tx = item.x + tentacle * r * 0.32;
+      const sway = Math.sin(state.elapsed * 3.1 + item.phase + tentacle * 1.3) * 7;
+      const len = r * (1.25 + 0.25 * Math.sin(state.elapsed * 2.2 + tentacle * 2.1));
+      context.beginPath();
+      context.moveTo(tx, item.y + r * 0.25);
+      context.quadraticCurveTo(tx + sway * 0.5, item.y + r * 0.8, tx + sway, item.y + r * 0.25 + len);
+      context.stroke();
+    }
+    // Bell: a dome with a violet rim and a bright core.
+    const gradient = context.createRadialGradient(
+      item.x - r * 0.25, item.y - r * 0.3, 2, item.x, item.y, r * swell,
+    );
+    gradient.addColorStop(0, PALETTE.jellyCore);
+    gradient.addColorStop(0.55, PALETTE.jelly);
+    gradient.addColorStop(1, '#b06fd6');
+    context.fillStyle = gradient;
+    context.beginPath();
+    context.ellipse(item.x, item.y - r * 0.1, r * swell, r * 0.78 * swell, 0, Math.PI, 0);
+    context.closePath();
+    context.fill();
+    // Frilled rim.
+    context.fillStyle = 'rgba(251, 231, 255, 0.85)';
+    for (let frill = -2; frill <= 2; frill += 1) {
+      context.beginPath();
+      context.arc(item.x + frill * r * 0.34, item.y - r * 0.1 + r * 0.12 * pulse, r * 0.16, 0, Math.PI * 2);
+      context.fill();
+    }
+    // Sting dots on the bell.
+    context.fillStyle = 'rgba(176, 111, 214, 0.8)';
+    context.beginPath();
+    context.arc(item.x - r * 0.3, item.y - r * 0.45, r * 0.1, 0, Math.PI * 2);
+    context.arc(item.x + r * 0.25, item.y - r * 0.55, r * 0.08, 0, Math.PI * 2);
+    context.fill();
+  }
+
+  function drawShield(item, state) {
+    const pulse = 1 + 0.1 * Math.sin(state.elapsed * 4 + item.phase);
+    context.save();
+    context.globalCompositeOperation = 'lighter';
+    glowCircle(item.x, item.y, item.r * 3.2 * pulse, 'rgba(110, 231, 255, 0.55)', 0.8);
+    context.restore();
+    // The bubble.
+    context.strokeStyle = 'rgba(230, 251, 255, 0.95)';
+    context.lineWidth = 2;
+    context.beginPath();
+    context.arc(item.x, item.y, item.r * pulse, 0, Math.PI * 2);
+    context.stroke();
+    context.fillStyle = 'rgba(110, 231, 255, 0.22)';
+    context.beginPath();
+    context.arc(item.x, item.y, item.r * pulse, 0, Math.PI * 2);
+    context.fill();
+    // The shield glyph inside: a little heater shield, bright cyan.
+    const s = item.r * 0.62;
+    context.fillStyle = PALETTE.shieldCore;
+    context.beginPath();
+    context.moveTo(item.x, item.y - s);
+    context.lineTo(item.x + s * 0.8, item.y - s * 0.45);
+    context.lineTo(item.x + s * 0.8, item.y + s * 0.1);
+    context.quadraticCurveTo(item.x + s * 0.8, item.y + s * 0.7, item.x, item.y + s);
+    context.quadraticCurveTo(item.x - s * 0.8, item.y + s * 0.7, item.x - s * 0.8, item.y + s * 0.1);
+    context.lineTo(item.x - s * 0.8, item.y - s * 0.45);
+    context.closePath();
+    context.fill();
+    context.fillStyle = PALETTE.shield;
+    context.beginPath();
+    context.moveTo(item.x, item.y - s * 0.55);
+    context.lineTo(item.x + s * 0.45, item.y - s * 0.2);
+    context.lineTo(item.x, item.y + s * 0.55);
+    context.lineTo(item.x - s * 0.45, item.y - s * 0.2);
+    context.closePath();
+    context.fill();
   }
 
   function drawUrchin(item, state) {
@@ -421,6 +507,20 @@ export function createRenderer(canvas) {
     context.beginPath();
     context.arc(player.x + player.face * player.r * 1.05, player.y - player.r * 1.0, 5, 0, Math.PI * 2);
     context.fill();
+    // The shield ring: a bright cyan double ring while a shield is armed.
+    if (player.shield) {
+      const ringPulse = 0.6 + 0.3 * Math.sin(state.elapsed * 4);
+      context.strokeStyle = `rgba(110, 231, 255, ${ringPulse})`;
+      context.lineWidth = 3;
+      context.beginPath();
+      context.arc(player.x, player.y, player.r * 1.75, 0, Math.PI * 2);
+      context.stroke();
+      context.strokeStyle = `rgba(230, 251, 255, ${ringPulse * 0.7})`;
+      context.lineWidth = 1.5;
+      context.beginPath();
+      context.arc(player.x, player.y, player.r * 1.95, 0, Math.PI * 2);
+      context.stroke();
+    }
   }
 
   function drawTexts(state) {
@@ -494,6 +594,21 @@ export function createRenderer(canvas) {
     }
     text(bestLabel(best), FIELD.width - 26, 62, 18, PALETTE.muted, 'right');
 
+    // Shield pill: shows while a shield is armed, so the save is never a mystery.
+    if (state.player.shield) {
+      const pillWidth = 168;
+      const pillX = FIELD.width - 26 - pillWidth;
+      const pillY = 92;
+      context.fillStyle = 'rgba(110, 231, 255, 0.16)';
+      roundRectPath(pillX, pillY, pillWidth, 28, 14);
+      context.fill();
+      context.strokeStyle = PALETTE.shield;
+      context.lineWidth = 1.5;
+      roundRectPath(pillX, pillY, pillWidth, 28, 14);
+      context.stroke();
+      text('SHIELD READY', FIELD.width - 26 - pillWidth / 2, pillY + 6, 16, PALETTE.shieldCore, 'center');
+    }
+
     // Combo meter under the score.
     if (state.combo > 1) {
       const label = `COMBO ×${state.combo}`;
@@ -541,7 +656,8 @@ export function createRenderer(canvas) {
 
   const TITLE_LINES = [
     'Eat the glowing plankton. Catch golden pearls for a Lumen Burst.',
-    'Dodge the urchins and the anglerfish — you have 3 lives.',
+    'Dodge the urchins, the jellyfish and the anglerfish — you have 3 lives.',
+    'Catch a cyan shield bubble and it will save you from one hit.',
     'Swim with the mouse or WASD / arrow keys · P pauses · M mutes',
     '',
   ];
@@ -572,6 +688,8 @@ export function createRenderer(canvas) {
       else if (item.kind === KIND_PEARL) drawPearl(item, state);
       else if (item.kind === KIND_URCHIN) drawUrchin(item, state);
       else if (item.kind === KIND_ANGLER) drawAngler(item, state);
+      else if (item.kind === KIND_JELLY) drawJelly(item, state);
+      else if (item.kind === KIND_SHIELD) drawShield(item, state);
     }
     drawParticles(state);
     drawPlayer(state);
@@ -583,7 +701,7 @@ export function createRenderer(canvas) {
       context.fillRect(0, 0, FIELD.width, FIELD.height);
     }
     if (screen === SCREEN_TITLE) {
-      TITLE_LINES[3] = `Best dive so far: ${formatScore(best)}`;
+      TITLE_LINES[4] = `Best dive so far: ${formatScore(best)}`;
       drawPanel('✦ LUMEN REEF ✦', TITLE_LINES, 'Click or press Enter to dive in', best);
       return;
     }

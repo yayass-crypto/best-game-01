@@ -4,7 +4,7 @@
 // what a short game really looks like and the same seed always gives the same frame.
 
 import { FIELD, STEP } from './config.js';
-import { EVENT_OVER, KIND_ANGLER, KIND_ORB, KIND_PEARL, KIND_URCHIN } from './world.js';
+import { EVENT_OVER, KIND_ANGLER, KIND_JELLY, KIND_ORB, KIND_PEARL, KIND_SHIELD, KIND_URCHIN } from './world.js';
 import { SCREEN_OVER, SCREEN_PLAY, SCREEN_TITLE } from './render.js';
 
 const START_SECONDS = 5;
@@ -37,14 +37,14 @@ function autopilot(state, skill) {
     const dx = player.x - item.x;
     const dy = player.y - item.y;
     const distance = Math.hypot(dx, dy);
-    if (item.kind === KIND_URCHIN || item.kind === KIND_ANGLER) {
+    if (item.kind === KIND_URCHIN || item.kind === KIND_ANGLER || item.kind === KIND_JELLY) {
       if (distance < dangerRadius && distance > 0.01) {
         const weight = (dangerRadius - distance) / dangerRadius;
         awayX += (dx / distance) * weight;
         awayY += (dy / distance) * weight;
       }
     } else {
-      const worth = item.kind === KIND_PEARL ? 0.45 : 1;
+      const worth = item.kind === KIND_PEARL ? 0.45 : item.kind === KIND_SHIELD ? 0.3 : 1;
       const score = distance * worth;
       if (score < nearestScore) {
         nearestScore = score;
@@ -109,6 +109,12 @@ export function stageShot(name, world) {
   if (name === 'burst') {
     playFor(world, BURST_SECONDS, 1);
     world.forcePearl();
+    // A jellyfish drifts nearby so the burst frame shows the new enemy too.
+    const player = world.state.player;
+    world.forceJelly(
+      Math.min(FIELD.width - 70, Math.max(70, player.x + 300)),
+      Math.min(FIELD.height - 90, Math.max(90, player.y - 150)),
+    );
     // Only a quarter of a second past the catch, so the golden burst is still bright.
     for (let index = 0; index < 0.25 / STEP; index += 1) {
       const steer = autopilot(world.state, 1);
@@ -123,5 +129,19 @@ export function stageShot(name, world) {
   }
   const over = playFor(world, PLAY_SECONDS, 1);
   if (over) settle(world);
+  else {
+    // Stage the new mechanics into the frame: a pulsing jellyfish and a shield
+    // bubble near Glowfin, far enough that the half-second settle cannot collect them.
+    const player = world.state.player;
+    world.forceJelly(
+      Math.min(FIELD.width - 70, Math.max(70, player.x + 250)),
+      Math.min(FIELD.height - 90, Math.max(90, player.y - 130)),
+    );
+    world.forceShield(
+      Math.min(FIELD.width - 70, Math.max(70, player.x - 300)),
+      Math.min(FIELD.height - 90, Math.max(90, player.y + 110)),
+    );
+    for (let index = 0; index < 0.5 / STEP; index += 1) world.step(STEP, 0, 0, true);
+  }
   return { screen: over ? SCREEN_OVER : SCREEN_PLAY, best: world.state.score };
 }
